@@ -1,0 +1,5 @@
+.vscode/
+.vagrant/
+
+build/
+env/
