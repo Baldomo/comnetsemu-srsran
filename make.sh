@@ -110,6 +110,7 @@ project_vagrant() {
     vagrant up
 }
 
+# Setup virtualenv with comnetsemu's dependencies for editor completion etc
 virtualenv() {
     if [ -f "$_virtualenv_dir"/bin/activate ]; then
         warning "Nothing to do"
