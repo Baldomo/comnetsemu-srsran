@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
-set -eo pipefail
-
 source utils/message.sh
 source utils/parseopts.sh
 
+_script="$(realpath "$0")"
 _script_dir="$(realpath "$(dirname "$0")")"
 _build_dir="$_script_dir/build"
 _comnetsemu_dir="$_script_dir/comnetsemu"
@@ -12,9 +11,11 @@ _utils_dir="$_script_dir/utils"
 _virtualenv_dir="$_script_dir/env"
 
 _force=0
+_help=0
 
 declare -A _targets=(
     [clean]="clean"
+    [clean-deep]="clean_deep"
     [comnetsemu-box]="comnetsemu_box"
     [docker]="srsran_docker"
     [vagrant]="project_vagrant"
@@ -44,14 +45,23 @@ Usage: $0 [options] <target>
 
   Options:
     -f    force the target to run even if files have already been built.
-    -h    display this help message and exit.
+    -h    display this help message or target-specific help (--help <target>).
 EOF
 }
 
-# Package comnetsemu as a Vagrant base box
+# Shows help/documentation for a specific target
+# Documentation syntax (ignore first #):
+# #:(<target name>) <documentation>
+_target_help() {
+    local _help
+    # Get lne with a specific comment and use it as documentation
+    _help=$(sed -nE "s/^#:\(($1)\)\s+(.*)$/\2/p" "$_script")
+    echo "./make.sh $1: $_help"
+}
+
+#:(comnetsemu-box) Package comnetsemu as a Vagrant base box
 comnetsemu_box() {
     if [ -f "$_build_dir"/comnetsemu.box ] && (( ! _force )); then
-        warning "Nothing to do"
         return
     fi
 
@@ -60,6 +70,7 @@ comnetsemu_box() {
 
     msg "Packaging comnetsemu with Vagrant"
 
+    local _status
     _status=$(vagrant global-status | grep comnetsemu)
     if [ ! "$_status" ] || [[ "$(echo "$_status" | awk '{print $4}')" = "poweroff" ]]; then
         msg2 "Starting comnetsemu"
@@ -75,15 +86,14 @@ comnetsemu_box() {
     popd >/dev/null || die "Error popd directory $_comnetsemu_dir"
 
     msg "Adding comnetsemu box to Vagrant"
+    local _comnetsemu_version
     _comnetsemu_version=$(git -C comnetsemu describe --tags)
     vagrant box add -c -f --name comnetsemu-"${_comnetsemu_version/v/}" "$_build_dir"/comnetsemu.box
 }
 
-# Builds srsRAN in a Docker container and saves it as tarred image
-# to avoid having to build it inside the VM
+#:(docker) Builds srsRAN in a Docker container and saves it as tarred image to avoid having to build it inside the VM
 srsran_docker() {
     if [ -f "$_build_dir"/srsran.tar ] && (( ! _force )); then
-        warning "Nothing to do"
         return
     fi
 
@@ -93,12 +103,13 @@ srsran_docker() {
 	docker save -o "$_build_dir"/srsran.tar srsran
 }
 
-# Create a new Vagrant VM with comnetsemu as base image, the upload all project files
-# See Vagrantfile 
+#:(vagrant) Create a new Vagrant VM with comnetsemu as base image, the upload all project files (see Vagrantfile) 
 project_vagrant() {
+    local _status
     _status=$(vagrant global-status | grep comnetsemu-srsran)
-    if [ "$_status" ] && [[ "$(echo "$_status" | awk '{print $4}')" = "running" ]] && (( ! _force )); then
-        warning "Nothing to do"
+    if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $4}')" = "running" ]] && (( ! _force )); then
+        warning "VM already running! Restarting"
+        vagrant reload
         return
     fi
 
@@ -110,7 +121,7 @@ project_vagrant() {
     vagrant up
 }
 
-# Setup virtualenv with comnetsemu's dependencies for editor completion etc
+#:(virtualenv) Setup virtualenv with comnetsemu's dependencies for editor completion etc
 virtualenv() {
     if [ -f "$_virtualenv_dir"/bin/activate ]; then
         warning "Nothing to do"
@@ -126,16 +137,32 @@ virtualenv() {
     deactivate
 }
 
+#:(clean) Remove files created by this project
 clean() {
-    rm_msg() {
+    local _rm_msg
+    _rm_msg() {
         msg2 "Removing ${*: -1}"
         rm "$@"
     }
 
     # Deactivate virtualenv if running
     deactivate || true
-    rm_msg -rf "$_build_dir"
     rm_msg -rf "$_virtualenv_dir"
+}
+
+#:(clean-deep) DANGEROUS! Like clean(), plus remove comnetsemu box and destroy VM
+clean_deep() {
+    local _rm_msg
+    _rm_msg() {
+        msg2 "Removing ${*: -1}"
+        rm "$@"
+    }
+
+    # TODO: ask confirmation
+
+    clean
+    rm_msg -rf "$_build_dir"
+    vagrant destroy -f -g
 }
 
 {
@@ -151,7 +178,7 @@ clean() {
     OPT_SHORT="fh"
     OPT_LONG=("force" "help")
     if ! parseopts "$OPT_SHORT" "${OPT_LONG[@]}" -- "$@"; then
-        exit 1
+        die "Error parsing command line"
     fi
     set -- "${OPTRET[@]}"
     unset OPT_SHORT OPT_LONG OPTRET
@@ -159,11 +186,32 @@ clean() {
     while true; do
         case "$1" in
             -f|--force) _force=1 ;;
-            -h|--help)  _usage; exit 0 ;;
+            -h|--help)  _help=1 ;;
             --)         shift; break 2 ;;
         esac
         shift
     done
+
+    # No targets were passed from command line
+    if [[ "$#" = 0 ]]; then
+        # Allow calling just --help
+        if (( _help )); then
+            _usage
+            exit 0
+        fi
+
+        # Otherwise, error
+        error "Target not specified!"
+        _usage
+        exit 1
+    fi
+
+    # "help" is not a target but we know what the user meant
+    if [[ "$1" = "help" ]]; then
+        error "Target 'help' does not exist (use --help)! Showing help anyways"
+        _usage
+        exit 1
+    fi
 
     # Exit if target does not exist
     if [[ ! -v _targets["$1"] ]]; then
@@ -172,6 +220,13 @@ clean() {
         exit 1
     fi
 
+    # Show help for target if --help <target> was used
+    if (( _help )); then
+        _target_help "$1"
+        exit 0
+    fi
+
+    # Run the actual target
     msg "Running target $1"
     ${_targets["$1"]}
     exit 0
