@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+#
+#   make.sh - overly complicated bash build system
+# 
+# Functions starting with "make::" are Makefile-like targets. Each function is
+# to check its own requirements for running and return silently if they are met.
+# Documentation is automatically scraped from the file as follows: when 
+# "--help <target>" is called, a comment in the form "#:(<target>)" is grepped
+# from this file (with the regex /^#:\(($1)\)\s+(.*)$/) and shown as text 
+# (see _target_help function below).
+# Script usage is shown on "./make.sh --help", and target-specific help with
+# "./make.sh --help <target>".
+# This script is also shellcheck-tested, for what it's worth.
 
 source utils/message.sh
 source utils/parseopts.sh
@@ -14,11 +26,12 @@ _force=0
 _help=0
 
 declare -A _targets=(
+    [check]="check"
     [clean]="clean"
     [clean-deep]="clean_deep"
     [comnetsemu-box]="comnetsemu_box"
-    [docker]="srsran_docker"
-    [vagrant]="project_vagrant"
+    [docker]="docker"
+    [vagrant]="vagrant"
     [virtualenv]="virtualenv"
 )
 
@@ -60,7 +73,7 @@ _target_help() {
 }
 
 #:(comnetsemu-box) Package comnetsemu as a Vagrant base box
-comnetsemu_box() {
+make::comnetsemu_box() {
     if [ -f "$_build_dir"/comnetsemu.box ] && (( ! _force )); then
         return
     fi
@@ -92,7 +105,7 @@ comnetsemu_box() {
 }
 
 #:(docker) Builds srsRAN in a Docker container and saves it as tarred image to avoid having to build it inside the VM
-srsran_docker() {
+make::docker() {
     if [ -f "$_build_dir"/srsran.tar ] && (( ! _force )); then
         return
     fi
@@ -104,7 +117,7 @@ srsran_docker() {
 }
 
 #:(vagrant) Create a new Vagrant VM with comnetsemu as base image, the upload all project files (see Vagrantfile) 
-project_vagrant() {
+make::vagrant() {
     local _status
     _status=$(vagrant global-status | grep comnetsemu-srsran)
     if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $4}')" = "running" ]] && (( ! _force )); then
@@ -113,8 +126,8 @@ project_vagrant() {
         return
     fi
 
-    comnetsemu_box
-    # srsran_docker
+    make::comnetsemu_box
+    # make::docker
 
     # TODO: integrate docker in comnetsemu, write topology and tests
     msg "Starting comnetsemu-srsran"
@@ -122,7 +135,7 @@ project_vagrant() {
 }
 
 #:(virtualenv) Setup virtualenv with comnetsemu's dependencies for editor completion etc
-virtualenv() {
+make::virtualenv() {
     if [ -f "$_virtualenv_dir"/bin/activate ]; then
         warning "Nothing to do"
         return
@@ -138,7 +151,7 @@ virtualenv() {
 }
 
 #:(clean) Remove files created by this project
-clean() {
+make::clean() {
     local _rm_msg
     _rm_msg() {
         msg2 "Removing ${*: -1}"
@@ -151,7 +164,7 @@ clean() {
 }
 
 #:(clean-deep) DANGEROUS! Like clean(), plus remove comnetsemu box and destroy VM
-clean_deep() {
+make::clean_deep() {
     local _rm_msg
     _rm_msg() {
         msg2 "Removing ${*: -1}"
@@ -163,6 +176,38 @@ clean_deep() {
     clean
     rm_msg -rf "$_build_dir"
     vagrant destroy -f -g
+}
+
+#:(check) Runs various system checks (running VMs, build/ and other directories)
+make::check() {
+    local _vagrant_check
+    _vagrant_check() {
+        local _status
+        _status=$(vagrant global-status | grep -E "$1\s")
+        if [[ "$_status" ]]; then
+            msg2 "$1 (Vagrant): $(echo "$_status" | awk '{print $4}')"
+        else
+            msg2 "$1 (Vagrant): not created"
+        fi
+    }
+
+    msg "Running checks"
+
+    _vagrant_check "comnetsemu-srsran"
+    _vagrant_check "comnetsemu"
+
+    msg2 "Build directory ($_build_dir) contains:"
+    # Do some tree | sed trickery to indent lines and get a nice relative directory
+    tree -achsCDF --noreport "$(realpath --relative-base "$_script_dir" "$_build_dir")" | sed -nE 's/^.*/\t&/p'
+
+    local _venvs
+    _venvs=$(find "$(realpath --relative-base "$_script_dir" "$_script_dir")" -type f -name "activate")
+    if [[ -n "$_venvs" ]]; then
+        msg2 "Found python virtualenv at:"
+        dirname "$(dirname "$_venvs")" | sed -nE 's/^.*/\t&/p'
+    else
+        msg2 "No python virtualenv found"
+    fi
 }
 
 {
@@ -228,6 +273,6 @@ clean_deep() {
 
     # Run the actual target
     msg "Running target $1"
-    ${_targets["$1"]}
+    make::"${_targets["$1"]}"
     exit 0
 }
