@@ -30,7 +30,7 @@ Vagrant.configure("2") do |config|
     config.vm.define "comnetsemu-srsran" do |cs|
         cs.vm.synced_folder ".", "/home/vagrant/project", type: "rsync", 
             rsync__auto: true,
-            rsync__exclude: ["comnetsemu", "build/*.box"]
+            rsync__exclude: ["comnetsemu", "comnetsemu-docs", "build/*.box"]
 
         cs.vm.provider "virtualbox" do |vb|
             vb.name = "comnetsemu-srsran"

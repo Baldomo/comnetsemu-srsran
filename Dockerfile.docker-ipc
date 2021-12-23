@@ -4,7 +4,6 @@ FROM ubuntu:bionic as base
 RUN apt-get -qy update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -qqy \
         cmake \
-        libzmq3-dev libczmq-dev \
         libuhd-dev \
         uhd-host \
         libboost-program-options-dev \
@@ -20,29 +19,29 @@ RUN apt-get -qy update && \
         unzip && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /srsran
+WORKDIR /srslte
 
-# Pinned git commit used for this example (release 21.10)
-ARG COMMIT=5275f33360f1b3f1ee8d1c4d9ae951ac7c4ecd4e
+# Pinned git commit used for this example
+ARG COMMIT=c353480769a57607a228ecc75f6a750fa3730907
 
 # Download and build
-RUN curl -LO https://github.com/srsran/srsRAN/archive/${COMMIT}.zip && \
+RUN curl -LO https://github.com/jgiovatto/srsLTE/archive/${COMMIT}.zip && \
     unzip ${COMMIT}.zip && \
     rm ${COMMIT}.zip
 
-WORKDIR /srsran/srsRAN-${COMMIT}/build
+WORKDIR /srslte/srsLTE-${COMMIT}/build
 
-RUN cmake -DENABLE_ZEROMQ=ON -DENABLE_BLADERF=OFF -DENABLE_SOAPYSDR=OFF .. && \
-    make -j$(nproc) && \
+RUN cmake .. && \
+    make -j4 && \
     make install
 
 # Update dynamic linker
 RUN ldconfig
 
-WORKDIR /srsran
+WORKDIR /srslte
 
 # Copy all .example files and remove that suffix
-RUN cp srsRAN-${COMMIT}/*/*.example ./ && \
+RUN cp srsLTE-${COMMIT}/*/*.example ./ && \
     bash -c 'for file in *.example; do mv "$file" "${file%.example}"; done'
 
 # Run commands with line buffered standard output

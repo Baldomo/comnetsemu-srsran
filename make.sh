@@ -67,9 +67,11 @@ EOF
 # #:(<target name>) <documentation>
 _target_help() {
     local _help
-    # Get lne with a specific comment and use it as documentation
+    # Get line with a specific comment and use it as documentation
+    # Look for lines starting with `#:(<target>)`
     _help=$(sed -nE "s/^#:\(($1)\)\s+(.*)$/\2/p" "$_script")
-    echo "./make.sh $1: $_help"
+    msg "./make.sh $1"
+    plain "$_help"
 }
 
 #:(comnetsemu-box) Package comnetsemu as a Vagrant base box
@@ -112,6 +114,7 @@ make::docker() {
 
     _create_build_dir
 
+    msg "Building srsRAN in Docker container"
     docker build -t srsran "$_script_dir"
 	docker save -o "$_build_dir"/srsran.tar srsran
 }
@@ -120,9 +123,11 @@ make::docker() {
 make::vagrant() {
     local _status
     _status=$(vagrant global-status | grep comnetsemu-srsran)
-    if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $4}')" = "running" ]] && (( ! _force )); then
-        warning "VM already running! Restarting"
-        vagrant reload
+    if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $4}')" = "running" ]]; then
+        if (( _force )); then
+            warning "VM already running! Restarting"
+            vagrant reload
+        fi
         return
     fi
 
