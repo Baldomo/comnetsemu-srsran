@@ -1,0 +1,13 @@
+{
+	// List of extensions which should be recommended for users of this workspace.
+	"recommendations": [
+		"mads-hartmann.bash-ide-vscode",
+		"marp-team.marp-vscode",
+		"ms-python.python",
+		"timonwong.shellcheck"
+	],
+	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
+	"unwantedRecommendations": [
+		
+	]
+}

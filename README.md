@@ -4,7 +4,7 @@ The fork was chosen because it supports radio data exchange via shared memory an
 
 This project is also loosely based on [pgorczak/srslte-docker-emulated](https://github.com/pgorczak/srslte-docker-emulated).
 
-### Dvelopment
+### Development
 This project uses a custom build script written in Bash (`make.sh`). The script serves as a replacement for Makefiles (it provides useful command line help and other functionalities).
 For more information see:
 ```

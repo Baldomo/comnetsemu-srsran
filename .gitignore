@@ -1,5 +1,6 @@
-# Editor files
-.vscode/
+# Editor settings, keep recommended extensions
+.vscode/*
+!.vscode/extensions.json
 
 # Vagrant files
 .vagrant/
