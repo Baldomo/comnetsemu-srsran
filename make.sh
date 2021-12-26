@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
 #   make.sh - overly complicated bash build system
-# 
+#
 # Functions starting with "make::" are Makefile-like targets. Each function is
 # to check its own requirements for running and return silently if they are met.
 # Documentation is automatically scraped from the file as follows: when 
 # "--help <target>" is called, a comment in the form "#:(<target>)" is grepped
 # from this file (with the regex /^#:\(($1)\)\s+(.*)$/) and shown as text 
-# (see _target_help function below).
+# (see _target_help function below). The comment can be multiple lines with the prefix.
 # Script usage is shown on "./make.sh --help", and target-specific help with
 # "./make.sh --help <target>".
 # This script is also shellcheck-tested, for what it's worth.
@@ -25,16 +25,6 @@ _virtualenv_dir="$_script_dir/env"
 _force=0
 _help=0
 
-declare -A _targets=(
-    [check]="check"
-    [clean]="clean"
-    [clean-deep]="clean_deep"
-    [comnetsemu-box]="comnetsemu_box"
-    [docker]="docker"
-    [vagrant]="vagrant"
-    [virtualenv]="virtualenv"
-)
-
 # Creates $_build_dir if not present
 _create_build_dir() {
     mkdir -p "$_build_dir"
@@ -50,60 +40,42 @@ _git_submodule() {
 
 # Print usage
 _usage() {
+    local _targets
+    _targets=$(declare -F | awk '{print $NF}' | sed -nE "s/(make::)(.*)$/\2/p" | sort | tr '\n' ' ')
     cat <<EOF
-$(basename "$0") - Build script for comnetsemu-srsRAN
+./$(basename "$0") - Build script for comnetsemu-srsRAN
 
 Usage: $0 [options] <target>
-  Targets: ${!_targets[*]}
+  Targets: $_targets
 
   Options:
-    -f    force the target to run even if files have already been built.
-    -h    display this help message or target-specific help (--help <target>).
+    -f, --force    
+        force the target to run even if files have already been built.
+
+    -ff, --force --force
+        force ALL the targets in the chain to run even if not necessary.
+        Example: 
+            make::vagrant will run make::docker and make::comnetsemu_box with -ff active
+
+    -h, --help    
+        display this help message or target-specific help (--help <target>).
 EOF
 }
 
 # Shows help/documentation for a specific target
 # Documentation syntax (ignore first #):
 # #:(<target name>) <documentation>
+# #:(<target name>) <other line of documentation>
 _target_help() {
     local _help
     # Get line with a specific comment and use it as documentation
     # Look for lines starting with `#:(<target>)`
     _help=$(sed -nE "s/^#:\(($1)\)\s+(.*)$/\2/p" "$_script")
     msg "./make.sh $1"
-    plain "$_help"
-}
-
-#:(comnetsemu-box) Package comnetsemu as a Vagrant base box
-make::comnetsemu_box() {
-    if [ -f "$_build_dir"/comnetsemu.box ] && (( ! _force )); then
-        return
-    fi
-
-    _create_build_dir
-    _git_submodule
-
-    msg "Packaging comnetsemu with Vagrant"
-
-    local _status
-    _status=$(vagrant global-status | grep comnetsemu)
-    if [ ! "$_status" ] || [[ "$(echo "$_status" | awk '{print $4}')" = "poweroff" ]]; then
-        msg2 "Starting comnetsemu"
-        pushd "$_comnetsemu_dir" >/dev/null || die "Error pushd directory $_comnetsemu_dir"
-        vagrant up
-        popd >/dev/null || die "Error popd directory $_comnetsemu_dir"
-    fi
-    
-    msg2 "Compressing box. This may take several minutes"
-    pushd "$_comnetsemu_dir" >/dev/null || die "Error pushd directory $_comnetsemu_dir"
-    vagrant package comnetsemu
-    mv package.box "$_build_dir"/comnetsemu.box
-    popd >/dev/null || die "Error popd directory $_comnetsemu_dir"
-
-    msg "Adding comnetsemu box to Vagrant"
-    local _comnetsemu_version
-    _comnetsemu_version=$(git -C comnetsemu describe --tags)
-    vagrant box add -c -f --name comnetsemu-"${_comnetsemu_version/v/}" "$_build_dir"/comnetsemu.box
+    # Print all lines with plain()
+    IFS=$'\n'; for _line in $_help; do
+        plain "$_line"
+    done
 }
 
 #:(docker) Builds srsRAN in a Docker container and saves it as tarred image to avoid having to build it inside the VM
@@ -119,40 +91,58 @@ make::docker() {
 	docker save -o "$_build_dir"/srsran.tar srsran
 }
 
-#:(vagrant) Create a new Vagrant VM with comnetsemu as base image, the upload all project files (see Vagrantfile) 
+#:(vagrant) Create a new Vagrant VM with comnetsemu as base image, the upload all project files (see Vagrantfile)
 make::vagrant() {
+    local _in_vagrant
+    _in_vagrant() {
+        vagrant ssh -c "$1" || die "${2:-Error running command in VM}"
+    }
+
     local _status
-    _status=$(vagrant global-status | grep comnetsemu-srsran)
-    if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $4}')" = "running" ]]; then
-        if (( _force )); then
-            warning "VM already running! Restarting"
-            vagrant reload
+    _status=$(vagrant global-status | grep comnetsemu | awk '{print $2,$4}' | grep comnetsemu-srsran)
+    if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $NF}')" = "running" ]]; then
+        if (( ! _force )); then
+            return
         fi
-        return
+        warning "VM already running! Restarting"
+        vagrant reload
     fi
 
-    make::comnetsemu_box
-    # make::docker
+    # Only run these if -ff was used (see --help)
+    _force=$(( _force > 0 ? _force-1 : 0 ))
+    make::docker
 
-    # TODO: integrate docker in comnetsemu, write topology and tests
     msg "Starting comnetsemu-srsran"
-    vagrant up
+    vagrant up || die "Vagrant error or forced exit"
+
+    msg "Importing srsran docker image"
+    _in_vagrant "docker load -i /home/vagrant/project/$(basename "$_build_dir")/srsran.tar" "Error loading srsRAN image in VM"
+
+    # TODO: write topology and tests
+    # msg "Starting scripts in VM"
 }
 
-#:(virtualenv) Setup virtualenv with comnetsemu's dependencies for editor completion etc
+#:(virtualenv) Setup virtualenv with comnetsemu's dependencies for editor completion etc.
+#:(virtualenv) WARNING: running comnetsemu code in the virtualenv is not supported so be careful
 make::virtualenv() {
-    if [ -f "$_virtualenv_dir"/bin/activate ]; then
+    if [ -f "$_virtualenv_dir"/bin/activate ] && (( ! _force )); then
         warning "Nothing to do"
         return
     fi
 
     msg "Creating virtualenv"
+    rm -rf "$_virtualenv_dir"
     python -m venv "$_virtualenv_dir"
     # shellcheck disable=SC1091
     source "$_virtualenv_dir"/bin/activate
     msg "Installing dependencies"
-    pip install docker pyroute2 requests mininet ryu
-    deactivate
+    pip install docker pyroute2 requests
+    pip install git+https://github.com/mininet/mininet.git@2.3.0
+    pip install git+https://github.com/faucetsdn/ryu.git@v4.34
+    pushd "$_comnetsemu_dir" >/dev/null || die "Error pushd directory $_comnetsemu_dir"
+    python setup.py install
+    popd >/dev/null || die "Error popd directory $_comnetsemu_dir"
+    deactivate || true
 }
 
 #:(clean) Remove files created by this project
@@ -168,7 +158,7 @@ make::clean() {
     rm_msg -rf "$_virtualenv_dir"
 }
 
-#:(clean-deep) DANGEROUS! Like clean(), plus remove comnetsemu box and destroy VM
+#:(clean_deep) DANGEROUS! Like clean(), plus remove comnetsemu box and destroy VM
 make::clean_deep() {
     local _rm_msg
     _rm_msg() {
@@ -176,8 +166,7 @@ make::clean_deep() {
         rm "$@"
     }
 
-    # TODO: ask confirmation
-
+    # TODO: ask confirmation?
     clean
     rm_msg -rf "$_build_dir"
     vagrant destroy -f -g
@@ -198,12 +187,19 @@ make::check() {
 
     msg "Running checks"
 
-    _vagrant_check "comnetsemu-srsran"
-    _vagrant_check "comnetsemu"
+    if ! command -v vboxmanage &>/dev/null; then
+        error "Virtualbox not installed!"
+    else
+        msg2 "Virtualbox OK"
+    fi
 
-    msg2 "Build directory ($_build_dir) contains:"
-    # Do some tree | sed trickery to indent lines and get a nice relative directory
-    tree -achsCDF --noreport "$(realpath --relative-base "$_script_dir" "$_build_dir")" | sed -nE 's/^.*/\t&/p'
+    if ! command -v vagrant &>/dev/null; then
+        error "Vagrant not installed!"
+    else
+        msg2 "Vagrant OK"
+        _vagrant_check "comnetsemu-srsran"
+        _vagrant_check "comnetsemu"
+    fi
 
     local _venvs
     _venvs=$(find "$(realpath --relative-base "$_script_dir" "$_script_dir")" -type f -name "activate")
@@ -213,6 +209,10 @@ make::check() {
     else
         msg2 "No python virtualenv found"
     fi
+
+    msg2 "Build directory ($_build_dir) contains:"
+    # Do some tree | sed trickery to indent lines and get a nice relative directory
+    tree -achsCDF --noreport "$(realpath --relative-base "$_script_dir" "$_build_dir")" | sed -nE 's/^.*/\t&/p'
 }
 
 {
@@ -235,7 +235,7 @@ make::check() {
 
     while true; do
         case "$1" in
-            -f|--force) _force=1 ;;
+            -f|--force) (( _force++ )) ;;
             -h|--help)  _help=1 ;;
             --)         shift; break 2 ;;
         esac
@@ -251,7 +251,7 @@ make::check() {
         fi
 
         # Otherwise, error
-        error "Target not specified!"
+        error "Target not specified! Use --help for more information."
         _usage
         exit 1
     fi
@@ -263,8 +263,8 @@ make::check() {
         exit 1
     fi
 
-    # Exit if target does not exist
-    if [[ ! -v _targets["$1"] ]]; then
+    # Exit if target does not exist (checks if function is defined in this script)
+    if ! declare -F -- make::"$1" >/dev/null; then
         error "Uknown target: $1"
         _usage
         exit 1
@@ -277,7 +277,11 @@ make::check() {
     fi
 
     # Run the actual target
-    msg "Running target $1"
-    make::"${_targets["$1"]}"
+    if [[ $_force -gt 1 ]]; then
+        msg "Running target $1 at full force"
+    else
+        msg "Running target $1"
+    fi
+    make::"$1"
     exit 0
 }

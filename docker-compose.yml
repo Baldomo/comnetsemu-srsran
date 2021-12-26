@@ -1,16 +1,4 @@
-version: "2.2"
-
-x-srsue: &ue-settings
-  image: srslte
-  ipc: "container:virtual-srsenb"
-  cap_add:
-    - NET_ADMIN
-    - SYS_NICE
-  devices:
-    - /dev/net/tun
-  depends_on:
-    - srsenb
-  command: "srsue ue.conf.fauxrf"
+version: "3.8"
 
 networks:
   corenet:
@@ -21,7 +9,7 @@ networks:
 
 services:
   srsepc:
-    container_name: virtual-srsepc
+    container_name: srsepc
     image: srsran
     networks:
       corenet:
@@ -38,25 +26,38 @@ services:
       - --spgw.gtpu_bind_addr=10.80.95.10
   
   srsenb:
-    container_name: virtual-srsenb
+    container_name: srsenb
     image: srsran
     networks:
       corenet:
         ipv4_address: 10.80.95.11
-    ipc: shareable
     cap_add:
       - SYS_NICE
     command:
       - srsenb
-      - enb.conf.fauxrf
+      - enb.conf
+      - --rf.device_name=zmq
+      - --rf.device_args="fail_on_disconnect=true,tx_port=tcp://srsue:2000,rx_port=tcp://localhost:2001,id=enb,base_srate=23.04e6"
       - --enb.mme_addr=10.80.95.10
       - --enb.gtp_bind_addr=10.80.95.11
       - --enb.s1c_bind_addr=10.80.95.11
       - --enb_files.sib_config=sib.conf
   
   srsue:
-    <<: *ue-settings
-    container_name: virtual-srsue
+    container_name: srsue
+    image: srsran
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+    devices:
+      - /dev/net/tun
+    depends_on:
+      - srsenb
+    command: 
+      - srsue 
+      - ue.conf
+      - --rf.device_name=zmq
+      - --rf.device_args="tx_port=tcp://srsenb:2001,rx_port=tcp://localhost:2000,id=ue,base_srate=23.04e6"
   
   # srsue2:
   #   <<: *ue-settings

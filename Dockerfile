@@ -14,6 +14,7 @@ RUN apt-get -qy update && \
         libsctp-dev \
         libconfig++-dev \
         curl \
+        net-tools \
         iputils-ping \
         iproute2 \
         iptables \
@@ -42,8 +43,8 @@ RUN ldconfig
 WORKDIR /srsran
 
 # Copy all .example files and remove that suffix
-RUN cp srsRAN-${COMMIT}/*/*.example ./ && \
-    bash -c 'for file in *.example; do mv "$file" "${file%.example}"; done'
+# RUN cp srsRAN-${COMMIT}/*/*.example ./ && \
+#     bash -c 'for file in *.example; do mv "$file" "${file%.example}"; done'
 
 # Run commands with line buffered standard output
 # (-> get log messages in real time)
