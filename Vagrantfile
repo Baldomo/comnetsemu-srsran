@@ -27,6 +27,11 @@ apt-get install -y openbox
 SCRIPT
 
 $post_installation= <<-SCRIPT
+# Install docker compose 2.x
+mkdir -p /usr/local/lib/docker/cli-plugins
+wget -q -O /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-linux-x86_64
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
 # Allow vagrant user to use Docker without sudo
 usermod -aG docker vagrant
 if [ -d /home/vagrant/.docker ]; then

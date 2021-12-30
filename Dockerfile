@@ -1,12 +1,10 @@
-FROM ubuntu:bionic as base
+FROM ubuntu:bionic
 
 # Install dependencies
 RUN apt-get -qy update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -qqy \
         cmake \
         libzmq3-dev libczmq-dev \
-        libuhd-dev \
-        uhd-host \
         libboost-program-options-dev \
         libvolk1-dev \
         libfftw3-dev \
@@ -15,6 +13,9 @@ RUN apt-get -qy update && \
         libconfig++-dev \
         curl \
         net-tools \
+        telnet \
+        iperf \
+        iperf3\
         iputils-ping \
         iproute2 \
         iptables \
@@ -33,8 +34,8 @@ RUN curl -LO https://github.com/srsran/srsRAN/archive/${COMMIT}.zip && \
 
 WORKDIR /srsran/srsRAN-${COMMIT}/build
 
-RUN cmake -DENABLE_ZEROMQ=ON -DENABLE_BLADERF=OFF -DENABLE_SOAPYSDR=OFF .. && \
-    make -j$(nproc) && \
+RUN cmake -DENABLE_ZEROMQ=ON -DENABLE_UHD=OFF -DENABLE_BLADERF=OFF -DENABLE_SOAPYSDR=OFF .. && \
+    make -j$(nproc --ignore=2) && \
     make install
 
 # Update dynamic linker
@@ -48,4 +49,4 @@ WORKDIR /srsran
 
 # Run commands with line buffered standard output
 # (-> get log messages in real time)
-ENTRYPOINT [ "stdbuf", "-o", "L" ]
+# ENTRYPOINT [ "stdbuf", "-oL" ]

@@ -136,6 +136,7 @@ make::virtualenv() {
     # shellcheck disable=SC1091
     source "$_virtualenv_dir"/bin/activate
     msg "Installing dependencies"
+    pip install wheel
     pip install docker pyroute2 requests
     pip install git+https://github.com/mininet/mininet.git@2.3.0
     pip install git+https://github.com/faucetsdn/ryu.git@v4.34
@@ -156,6 +157,7 @@ make::clean() {
     # Deactivate virtualenv if running
     deactivate || true
     rm_msg -rf "$_virtualenv_dir"
+    rm_msg -rf ./*VBoxHeadless*.log
 }
 
 #:(clean_deep) DANGEROUS! Like clean(), plus remove comnetsemu box and destroy VM
