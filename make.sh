@@ -25,19 +25,6 @@ _virtualenv_dir="$_script_dir/env"
 _force=0
 _help=0
 
-# Creates $_build_dir if not present
-_create_build_dir() {
-    mkdir -p "$_build_dir"
-}
-
-# Download submodules
-_git_submodule() {
-    if [ -n "$(find "$_comnetsemu_dir" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
-        msg "Downloading comnetsemu as submodule"
-        git submodule update --init
-    fi
-}
-
 # Print usage
 _usage() {
     local _targets
@@ -78,17 +65,50 @@ _target_help() {
     done
 }
 
+#:(build_dir) Creates $_build_dir if not present
+make::build_dir() {
+    mkdir -p "$_build_dir"
+}
+
+#:(git_submodules) Download submodules
+make::git_submodules() {
+    if [ -n "$(find "$_comnetsemu_dir" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
+        msg "Downloading comnetsemu as submodule"
+        git submodule update --init
+    fi
+}
+
 #:(docker) Builds srsRAN in a Docker container and saves it as tarred image to avoid having to build it inside the VM
 make::docker() {
     if [ -f "$_build_dir"/srsran.tar ] && (( ! _force )); then
         return
     fi
 
-    _create_build_dir
+    make::build_dir
 
     msg "Building srsRAN in Docker container"
     docker build -t srsran "$_script_dir"
 	docker save -o "$_build_dir"/srsran.tar srsran
+}
+
+#:(slides_live) Starts reveal-md in a Docker container with live reload
+make::slides_live() {
+    if docker inspect --type=container marp &>/dev/null && (( ! _force )); then
+        return
+    fi
+
+    docker stop marp &>/dev/null || true
+    docker run --rm -d --init \
+        -v "$(pwd)"/slides:/home/marp/app \
+        -e LANG="$LANG" -e MARP_USER="$(id -u):$(id -g)" \
+        -p 8080:8080 -p 37717:37717 \
+        --name marp \
+        marpteam/marp-cli --engine ./engine.js --html -s .
+    
+    sleep 1s
+    if docker inspect --type=container marp &>/dev/null; then
+        xdg-open http://localhost:8080
+    fi
 }
 
 #:(vagrant) Create a new Vagrant VM with comnetsemu as base image, the upload all project files (see Vagrantfile)
