@@ -95,8 +95,8 @@ class Simple4G:
             ),
         )
         self._hosts.append(enb)
-        self._net.addLink(switch_core, enb, intf=TCIntf, ip=CORE_IPS['enb'], bw=1000, delay="1ms")
-        self._net.addLink(switch_rf, enb, intf=TCIntf, ip=RF_IPS['enb'], bw=1000, delay="1ms")
+        self._net.addLink(switch_core, enb, intf=TCIntf, ip=CORE_IPS["enb"], bw=1000, delay="1ms")
+        self._net.addLink(switch_rf, enb, intf=TCIntf, ip=RF_IPS["enb"], bw=1000, delay="1ms")
 
         # TODO: GNU radio companion broker for multiple UEs
         # TODO: configure authentication/user from user_db.csv
@@ -118,7 +118,7 @@ class Simple4G:
             ),
         )
         self._hosts.append(ue)
-        self._net.addLink(switch_rf, ue, intf=TCIntf, ip=RF_IPS['ue'], bw=1000, delay="1ms")
+        self._net.addLink(switch_rf, ue, intf=TCIntf, ip=RF_IPS["ue"], bw=1000, delay="1ms")
 
     def run(self) -> None:
         log.info("::: Starting 4G network stack")

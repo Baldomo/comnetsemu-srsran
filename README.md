@@ -14,6 +14,17 @@ For more information see:
 $ ./make.sh --help
 ```
 
+#### Updating `comnetsemu`
+If a new version of `comnetsemu` is available, just run
+```
+$ ./make.sh git_submodules
+```
+
+or (basically the same):
+```
+$ git submodule update --recursive --remote
+```
+
 #### Notes on local development (on the host)
 > Note: running topology code on the host is kinda useless, so don't do it
 
@@ -27,6 +38,7 @@ The root directory contains the following files (generally):
 | `comnetsemu/`        | Git submodule linked to the comnetsemu repository                 |
 | `comnetsemu-docs/`   | HTML documentation compiled from comnetsemu                       |
 | `config/`            | srsRAN configuration files. Used as a Docker volume inside the VM |
+| `slides/`            | Slides and assets                                                 |
 | `src/`               | Python scripts with network implementations                       |
 | `utils/`             | Contains extra utility files and bash functions for `make.sh`     |
 | `docker-compose.yml` | Network stack implemented with `docker compose`                   |

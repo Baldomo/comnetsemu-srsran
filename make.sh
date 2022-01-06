@@ -70,11 +70,13 @@ make::build_dir() {
     mkdir -p "$_build_dir"
 }
 
-#:(git_submodules) Download submodules
+#:(git_submodules) Download or update Git submodules
 make::git_submodules() {
     if [ -n "$(find "$_comnetsemu_dir" -maxdepth 0 -type d -empty 2>/dev/null)" ]; then
         msg "Downloading comnetsemu as submodule"
         git submodule update --init
+    else
+        git submodule update --recursive --remote --init
     fi
 }
 
@@ -103,7 +105,7 @@ make::slides_live() {
         -e LANG="$LANG" -e MARP_USER="$(id -u):$(id -g)" \
         -p 8080:8080 -p 37717:37717 \
         --name marp \
-        marpteam/marp-cli --engine ./engine.js --html -s .
+        marpteam/marp-cli --html -s .
     
     sleep 1s
     if docker inspect --type=container marp &>/dev/null; then
@@ -119,7 +121,7 @@ make::vagrant() {
     }
 
     local _status
-    _status=$(vagrant global-status | grep comnetsemu | awk '{print $2,$4}' | grep comnetsemu-srsran)
+    _status=$(vagrant global-status | grep comnetsemu-srsran | awk '{print $2,$4}')
     if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $NF}')" = "running" ]]; then
         if (( ! _force )); then
             return
@@ -220,7 +222,6 @@ make::check() {
     else
         msg2 "Vagrant OK"
         _vagrant_check "comnetsemu-srsran"
-        _vagrant_check "comnetsemu"
     fi
 
     local _venvs

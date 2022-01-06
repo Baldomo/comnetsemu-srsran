@@ -1,3 +1,3 @@
 [submodule "comnetsemu"]
 	path = comnetsemu
-	url = https://git.comnets.net/public-repo/comnetsemu.git
+	url = https://github.com/stevelorenz/comnetsemu.git
