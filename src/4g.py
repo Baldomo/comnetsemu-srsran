@@ -59,8 +59,7 @@ class Simple4G:
         ]
         epc = self._net.addDockerHost(
             "srsepc",
-            # dcmd=shlex.join(_epc_cmd),
-            dcmd="bash",
+            dcmd=shlex.join(_epc_cmd),
             dimage="srsran",
             docker_args=dict_union(
                 default_args,
@@ -150,7 +149,7 @@ class Simple4G:
 
 
 if __name__ == "__main__":
-    log.setLogLevel("info")
+    log.setLogLevel("debug")
     net = Simple4G(daemon=False)
     net.run()
     atexit.register(net.cleanup)
