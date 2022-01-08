@@ -14,6 +14,7 @@ DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -
 
 APT_PKGS=(
   bash-completion
+  dbus-x11
   dfc
   gdb
   git
