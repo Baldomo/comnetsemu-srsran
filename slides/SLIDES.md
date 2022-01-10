@@ -75,7 +75,7 @@ The network stack is provided by the [srsRAN](https://github.com/srsran/srsRAN) 
 
 * Three srsRAN components are used: EPC, eNodeB (ENB) and a simple UE
 * The RF signals are sent directly from UE to ENB using ZeroMQ instead of a software-defined radio
-* Two separate networks are required: one general use or emulating the internet and one for RF messaging
+* The ZeroMQ messages travel on the same network as EPC-ENB traffic but it's fine because ZeroMQ is strictly end-to-end
 * The components use the default configuration with required tweaks, such as static IP assignment to the EPC
 
 ---
@@ -155,4 +155,11 @@ class Simple4G:
 
 ---
 
-# Roadblocks
+# Why not separate networks?
+
+<!-- _footer: For more context, see [Github issue](https://github.com/stevelorenz/comnetsemu/issues/12) -->
+
+* Mininet hates it when a single host is connected to two separate networks
+* Mininet only attaches network interfaces to hosts **after** they've been started
+  - This made `srsEPC`/`srsENB` stall execution since they couldn't connect
+* In the end, a single network for all the traffic was fine

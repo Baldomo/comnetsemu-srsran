@@ -3,9 +3,11 @@ This project aims to integrate a source build of [srsRAN](https://github.com/srs
 Radio packets are exchanged through ZeroMQ instead of a physical radio device (see [srsRAN documentation](https://docs.srsran.com/en/latest/app_notes/source/zeromq/source/index.html) for more information).
 
 ### Knowledge base
-- `srsENB` supports only one UE per channel (each channel is a ZeroMQ rx/tx pair) as per [official documentation](https://docs.srsran.com/en/latest/app_notes/source/zeromq/source/index.html#known-issues). 
+- `srsENB` supports only one UE per channel (each channel is a ZeroMQ rx/tx pair) as per [official documentation](https://docs.srsran.com/en/latest/app_notes/source/zeromq/source/index.html#known-issues). Since the rx/tx is implemented as a simple [REQ/REP pair](https://zguide.zeromq.org/docs/chapter1/#Ask-and-Ye-Shall-Receive), either:
+  - a custom broker based on something like [zeromq/Malamute](https://github.com/zeromq/malamute) has to be used
+  - the ZeroMQ implementation inside srsRAN must be refactored to support more complex patterns
 - A single UE can use multiple channels for things like [5G NSA mode](https://docs.srsran.com/en/latest/app_notes/source/5g_nsa_zmq/source/index.html).
-- Multiple cells can be emulated via [S1 handover](https://docs.srslte.com/en/latest/app_notes/source/handover/source/index.html). Effectively, using GNU Radio Companion as broker could make 1-eNB-multiple-UEs srsRAN networks possible.
+- Multiple cells can be emulated via [S1 handover](https://docs.srslte.com/en/latest/app_notes/source/handover/source/index.html).
 
 ### Development
 This project uses a custom build script written in Bash (`make.sh`). The script serves as a replacement for Makefiles (it provides useful command line help and other functionalities) and is self-documenting.

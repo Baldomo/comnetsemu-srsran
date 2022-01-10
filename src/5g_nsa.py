@@ -79,8 +79,10 @@ def run() -> None:
         f"--enb.gtp_bind_addr={IPS['enb']}",
         f"--enb.s1c_bind_addr={IPS['enb']}",
         "--rf.device_name=zmq",
-        f"--rf.device_args='id=enb,fail_on_disconnect=true,tx_port=tcp://*:2000,rx_port=tcp://{IPS['ue']}:2001,base_srate=23.04e6'",
+        f"--rf.device_args='id=enb,fail_on_disconnect=true,tx_port0=tcp://*:2000,rx_port0=tcp://{IPS['ue']}:2001,tx_port1=tcp://*:2100,rx_port1=tcp://{IPS['ue']}:2101,base_srate=23.04e6'",
         "--enb_files.sib_config=/etc/srsran/sib.conf",
+        # Needs a modified RRC configuration for extra 5G cell
+        "--enb_files.rr_config=/etc/srsran/rr.5g.conf",
         "--log.all_level=info",
         "--log.filename=/tmp/srsran_logs/enb.log",
         ">",
@@ -105,7 +107,13 @@ def run() -> None:
     _ue_cmd = [
         "srsue",
         "--rf.device_name=zmq",
-        f"--rf.device_args='id=ue,fail_on_disconnect=true,tx_port=tcp://*:2001,rx_port=tcp://{IPS['enb']}:2000,base_srate=23.04e6'",
+        f"--rf.device_args='id=ue,fail_on_disconnect=true,tx_port0=tcp://*:2001,rx_port0=tcp://{IPS['enb']}:2000,tx_port1=tcp://*:2101,rx_port1=tcp://{IPS['enb']}:2100,base_srate=23.04e6'",
+        # Enable FDD and TDD frequency bands
+        "--rat.nr.bands=3,78",
+        # We're only using 1 carrier
+        "--rat.nr.nof_carriers=1",
+        # 5G NSA Mode is part of 3GPP release 15
+        "--rrc.release=15",
         "--log.all_level=info",
         "--log.filename=/tmp/srsran_logs/ue.log",
         ">",
@@ -125,7 +133,7 @@ def run() -> None:
     cmds[ue] = " ".join(_ue_cmd)
     net.addLink(switch, ue, bw=1000, delay="1ms")
 
-    log.output("::: Starting 4G network stack\n")
+    log.output("::: Starting 5G NSA network stack\n")
     net.start()
     for host in cmds:
         log.debug(f"::: Running cmd in container ({host.name}): {cmds[host]}\n")
