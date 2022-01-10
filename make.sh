@@ -19,6 +19,7 @@ _script="$(realpath "$0")"
 _script_dir="$(realpath "$(dirname "$0")")"
 _build_dir="$_script_dir/build"
 _comnetsemu_dir="$_script_dir/comnetsemu"
+_docker_dir="$_script_dir/docker"
 _utils_dir="$_script_dir/utils"
 _virtualenv_dir="$_script_dir/env"
 
@@ -89,7 +90,7 @@ make::docker() {
     make::build_dir
 
     msg "Building srsRAN in Docker container"
-    docker build -t srsran "$_script_dir"
+    docker build -t srsran "$_docker_dir"
 	docker save -o "$_build_dir"/srsran.tar srsran
 }
 

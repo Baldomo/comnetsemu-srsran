@@ -25,7 +25,7 @@ services:
     devices:
       - /dev/net/tun
     volumes:
-      - ./config:/etc/srsran:ro
+      - ../config:/etc/srsran:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     command:
@@ -44,7 +44,7 @@ services:
     cap_add:
       - SYS_NICE
     volumes:
-      - ./config:/etc/srsran:ro
+      - ../config:/etc/srsran:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     command:
@@ -68,7 +68,7 @@ services:
     devices:
       - /dev/net/tun
     volumes:
-      - ./config:/etc/srsran:ro
+      - ../config:/etc/srsran:ro
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     depends_on:
@@ -77,8 +77,3 @@ services:
       - srsue 
       - --rf.device_name=zmq
       - --rf.device_args="id=ue,fail_on_disconnect=true,tx_port=tcp://*:2001,rx_port=tcp://10.80.97.11:2000,base_srate=23.04e6"
-  
-  # srsue2:
-  #   <<: *ue-settings
-  #   container_name: virtual-srsue2
-  #   command: "srsue ue.conf.fauxrf --usim.imsi=001010123456780"

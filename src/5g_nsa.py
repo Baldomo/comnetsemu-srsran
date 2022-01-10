@@ -14,7 +14,7 @@ from mininet.link import TCIntf, TCLink
 from mininet.node import Controller, OVSBridge
 from mininet.topo import Topo
 
-from util import dict_union
+from util import dict_union, get_root_dir
 
 IPS: Dict[str, str] = {
     "epc": "10.80.95.10",
@@ -36,8 +36,8 @@ def run() -> None:
 
     default_args = {
         "volumes": [
-            os.getcwd() + "/config:/etc/srsran:ro",
-            os.getcwd() + "/logs:/tmp/srsran_logs",
+            get_root_dir() + "/config:/etc/srsran:ro",
+            get_root_dir() + "/logs:/tmp/srsran_logs",
             "/etc/timezone:/etc/timezone:ro",
             "/etc/localtime:/etc/localtime:ro",
         ]
