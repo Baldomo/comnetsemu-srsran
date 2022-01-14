@@ -10,10 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: Bhacaz/checkout-files
+      with:
+        files: slides
 
     - name: Move files around
-      run: mv slides docs
+      run: mv slides/* .
 
     - name: Cache docker containers
       uses: satackey/action-docker-layer-caching@v0.0.11
@@ -22,7 +24,7 @@ jobs:
 
     - name: Build & Deploy to GitHub Pages
       env:
-        MARP_ARGS: "docs/SLIDES.md -o docs/index.html --html"
+        MARP_ARGS: "SLIDES.md -o index.html --html"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         PUBLISH_TO_BRANCH: gh-pages
