@@ -1,0 +1,21 @@
+name: Deploy marp slides to Github Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build & Deploy to GitHub Pages
+      env:
+        MARP_ARGS: "slides/SLIDES.md -o index.html --html"
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        PUBLISH_TO_BRANCH: gh-pages
+      uses: ralexander-phi/marp-action@master

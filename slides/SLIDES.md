@@ -10,8 +10,12 @@ style: |
         justify-content: flex-start;
     }
 
-    section.center {
+    section.center-vertical {
         justify-content: center;
+    }
+
+    section.center-horizontal {
+        text-align: center;
     }
 
     section.big-img p {
@@ -30,7 +34,7 @@ style: |
     }
 
     div.twocols {
-        margin-top: 35px;
+        /* margin-top: 20px; */
         column-count: 2;
     }
     div.twocols p:first-child,
@@ -47,7 +51,7 @@ style: |
     }
 ---
 
-<!-- _class: center -->
+<!-- _class: center-vertical -->
 <!-- _backgroundImage: linear-gradient(25deg, #00164f, #174f80, #1d8eb3, #04d2e9) -->
 ![](#dcf2ff)
 
@@ -63,9 +67,9 @@ The network stack is provided by the [srsRAN](https://github.com/srsran/srsRAN) 
 ---
 
 # The software
-- Vagrant provisions the custom VM based on `comnetsemu` with some small fixes
+- Vagrant provisions a custom VM based on `comnetsemu` with some small fixes
 - `docker-compose` is used to test interoperability between srsRAN network nodes
-- The topology scripts and supporting library are written in Python (as is `comnetsemu`)
+- The topology scripts and supporting library are written in Python 3.8 (as is `comnetsemu`)
 - These slides are rendered using [Marp](https://github.com/marp-team/marp)
 - The build system for this project is written in Bash
 
@@ -74,9 +78,9 @@ The network stack is provided by the [srsRAN](https://github.com/srsran/srsRAN) 
 # Implementation notes
 
 * Three srsRAN components are used: EPC, eNodeB (ENB) and a simple UE
-* The RF signals are sent directly from UE to ENB using ZeroMQ instead of a software-defined radio
+* The RF signals are sent directly from UE to ENB using ZeroMQ REQ-REP instead of a software-defined radio
 * The ZeroMQ messages travel on the same network as EPC-ENB traffic but it's fine because ZeroMQ is strictly end-to-end
-* The components use the default configuration with required tweaks, such as static IP assignment to the EPC
+* The components use the default configuration with necessary tweaks, such as static IP assignment to the EPC
 
 ---
 
@@ -85,81 +89,79 @@ The network stack is provided by the [srsRAN](https://github.com/srsran/srsRAN) 
 <!-- _class: big-img -->
 ![w:900](topo_fancy.png)
 
+<!-- The EPC will then connect to the internet -->
+
 ---
 
-# Topology (low level view)
-
-<!-- TODO: add external internet connection -->
+# Topology for 4G LTE (low level view)
 
 <!-- _class: big-img -->
-![w:900](topo_lowlevel.png)
+![w:900](topo_lowlevel_4g.png)
 
 ---
 
-# Demo
+# Topology for 5G NSA (low level view)
+
+<!-- _class: big-img -->
+
+![w:900](topo_lowlevel_5gnsa.png)
+
+---
+
+# Why not separate networks?
+
+<!-- _footer: For more context, see [Github issue #12](https://github.com/stevelorenz/comnetsemu/issues/12) -->
+
+<style scoped>
+    ul {
+        font-size: 27px;
+    }
+</style>
 
 <!-- Cool trick, thank you https://github.com/marp-team/marpit/issues/137 -->
 <div class="twocols">
 
-```python
-CORE_IPS: dict = {
-    "epc": "10.80.95.10/24",
-    "enb": "10.80.95.11/24",
-}
-
-# Fake network used for ZeroMQ data transfer
-RF_IPS: dict = {
-    "enb": "10.80.97.11/24",
-    "ue": "10.80.97.12/24"
-}
-```
+* Mininet hates it when a single host is connected to two separate networks
+* Mininet only attaches network interfaces to hosts **after** they've been started
+  - This made `srsEPC`/`srsENB` stall execution since they couldn't connect
+* A single network for all the traffic was fine in theory
 
 <p class="break"></p>
 
 ```python
-CORE_IPS: dict = {
-    "epc": "10.80.95.10/24",
-    "enb": "10.80.95.11/24",
-}
+# Create the host
+epc = net.addDockerHost(
+    name="srsepc", ...
+)
+# Save the command line string
+cmds[epc] = "srsepc ..."
 
-# Fake network used for ZeroMQ data transfer
-RF_IPS: dict = {
-    "enb": "10.80.97.11/24",
-    "ue": "10.80.97.12/24"
-}
+# Start network and interfaces
+net.start()
+for host in cmds:
+    # Run command inside each host
+    host.cmd(cmds[host])
 ```
 
 </div>
 
 ---
 
+<style scoped>
+    h1 {
+        font-size: 4rem;
+    }
+</style>
+
+<!-- _paginate: false -->
+<!-- _class: center-vertical center-horizontal -->
+
 # Demo
-
-```python
-CORE_IPS: dict = {
-    "epc": "10.80.95.10/24",
-    "enb": "10.80.95.11/24",
-}
-
-# Fake network used for ZeroMQ data transfer
-RF_IPS: dict = {
-    "enb": "10.80.97.11/24",
-    "ue": "10.80.97.12/24"
-}
-
-class Simple4G:
-    _daemon: bool = False
-    _net: Containernet = None
-    _hosts: list = []
-```
 
 ---
 
-# Why not separate networks?
-
-<!-- _footer: For more context, see [Github issue](https://github.com/stevelorenz/comnetsemu/issues/12) -->
-
-* Mininet hates it when a single host is connected to two separate networks
-* Mininet only attaches network interfaces to hosts **after** they've been started
-  - This made `srsEPC`/`srsENB` stall execution since they couldn't connect
-* In the end, a single network for all the traffic was fine
+# Closing remarks
+- `srsENB` supports only one UE per channel (each channel being a ZeroMQ REQ/REP pair) so a custom ZeroMQ broker is needed for faithful radio tower emulation
+  - srsRAN can also use SUB/PUB ZeroMQ sockets (*not mentioned in the official documentation*)
+- Multiple cells can be emulated via [S1 handover](https://docs.srslte.com/en/latest/app_notes/source/handover/source/index.html)
+- The code provided is simple and very procedural (and full of hacks and workarounds) but it's a working, stable example of what can be done with srsRAN in a containerized environment

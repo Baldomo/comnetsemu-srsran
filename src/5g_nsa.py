@@ -102,7 +102,6 @@ def run() -> None:
     cmds[enb] = " ".join(_enb_cmd)
     net.addLink(switch, enb, bw=1000, delay="1ms")
 
-    # TODO: GNU radio companion broker for multiple UEs
     # TODO: configure authentication/user from user_db.csv
     _ue_cmd = [
         "srsue",

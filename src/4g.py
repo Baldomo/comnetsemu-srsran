@@ -63,7 +63,7 @@ def run() -> None:
             {"devices": ["/dev/net/tun"], "cap_add": ["SYS_NICE", "NET_ADMIN"]},
         ),
     )
-    # Command lines are stored for later, to be run after self.net.start()
+    # Command lines are stored for later, to be run after net.start()
     cmds[epc] = " ".join(_epc_cmd)
     net.addLink(
         switch,
@@ -100,7 +100,6 @@ def run() -> None:
     cmds[enb] = " ".join(_enb_cmd)
     net.addLink(switch, enb, bw=1000, delay="1ms")
 
-    # TODO: GNU radio companion broker for multiple UEs
     # TODO: configure authentication/user from user_db.csv
     _ue_cmd = [
         "srsue",
@@ -127,6 +126,8 @@ def run() -> None:
 
     log.output("::: Starting 4G network stack\n")
     net.start()
+    # Now actually start the services, since interfaces are created by
+    # net.start() and they won't hang
     for host in cmds:
         log.debug(f"::: Running cmd in container ({host.name}): {cmds[host]}\n")
         host.cmd(cmds[host])

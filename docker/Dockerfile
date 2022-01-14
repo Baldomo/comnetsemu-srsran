@@ -49,4 +49,4 @@ WORKDIR /srsran
 
 # Run commands with line buffered standard output
 # (-> get log messages in real time)
-# ENTRYPOINT [ "stdbuf", "-oL" ]
+ENTRYPOINT [ "stdbuf", "-oL" ]

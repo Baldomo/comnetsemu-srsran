@@ -5,8 +5,9 @@ Radio packets are exchanged through ZeroMQ instead of a physical radio device (s
 ### Knowledge base
 - `srsENB` supports only one UE per channel (each channel is a ZeroMQ rx/tx pair) as per [official documentation](https://docs.srsran.com/en/latest/app_notes/source/zeromq/source/index.html#known-issues). Since the rx/tx is implemented as a simple [REQ/REP pair](https://zguide.zeromq.org/docs/chapter1/#Ask-and-Ye-Shall-Receive), either:
   - a custom broker based on something like [zeromq/Malamute](https://github.com/zeromq/malamute) has to be used
-  - the ZeroMQ implementation inside srsRAN must be refactored to support more complex patterns
-- A single UE can use multiple channels for things like [5G NSA mode](https://docs.srsran.com/en/latest/app_notes/source/5g_nsa_zmq/source/index.html).
+  - some tricks can be done by changing `tx_type` and `rx_type` to PUB-SUB in `rf.device_args` like this: `--rf.device_args="tx_type=pub,rx_type=sub"` (this is an **undocumented feature** of srsRAN's ZeroMQ radio implementation, found [in the source code here](https://github.com/srsran/srsRAN/blob/5275f33360f1b3f1ee8d1c4d9ae951ac7c4ecd4e/lib/src/phy/rf/rf_zmq_imp.c#L248-L278))
+  - the ZeroMQ implementation inside srsRAN must be refactored to support more complex patterns (which will probably never be done since it's outside the scope of the project)
+- A single UE can use multiple channels for things like [5G NSA mode](https://docs.srsran.com/en/latest/app_notes/source/5g_nsa_zmq/source/index.html) (implemented in this project).
 - Multiple cells can be emulated via [S1 handover](https://docs.srslte.com/en/latest/app_notes/source/handover/source/index.html).
 
 ### Development
