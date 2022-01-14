@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Remove unneeded files
-      run: find . -maxdepth 1 ! -name "slides" -exec rm -r "{}" \;
+      run: find . -maxdepth 1 ! -name ".git" ! -name "slides" -exec rm -r "{}" \;
 
     - name: Move files around
       run: mv slides/* .
