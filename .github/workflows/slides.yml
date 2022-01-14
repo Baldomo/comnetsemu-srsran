@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: Bhacaz/checkout-files@master
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        files: slides
+    - uses: actions/checkout@v2
+
+    - name: Remove unneeded files
+      run: find . -maxdepth 1 ! -name "slides" -exec rm -r "{}" \;
 
     - name: Move files around
       run: mv slides/* .
