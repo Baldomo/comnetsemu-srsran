@@ -12,9 +12,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Move files around
+      run: mv slides docs
+
     - name: Build & Deploy to GitHub Pages
       env:
-        MARP_ARGS: "slides/SLIDES.md -o index.html --html"
+        MARP_ARGS: "docs/SLIDES.md -o docs/index.html --html"
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         PUBLISH_TO_BRANCH: gh-pages
