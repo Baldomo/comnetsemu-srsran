@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: Bhacaz/checkout-files
+    - uses: Bhacaz/checkout-files@master
       with:
         files: slides
 
