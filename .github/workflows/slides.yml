@@ -12,6 +12,7 @@ jobs:
     steps:
     - uses: Bhacaz/checkout-files@master
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         files: slides
 
     - name: Move files around
