@@ -20,6 +20,7 @@ _script_dir="$(realpath "$(dirname "$0")")"
 _build_dir="$_script_dir/build"
 _comnetsemu_dir="$_script_dir/comnetsemu"
 _docker_dir="$_script_dir/docker"
+_src_dir="$_script_dir/src"
 _utils_dir="$_script_dir/utils"
 _virtualenv_dir="$_script_dir/env"
 
@@ -122,7 +123,7 @@ make::vagrant() {
     }
 
     local _status
-    _status=$(vagrant global-status | grep comnetsemu-srsran | awk '{print $2,$4}')
+    _status=$(vagrant global-status --prune | grep comnetsemu-srsran | awk '{print $2,$4}')
     if [[ "$_status" ]] && [[ "$(echo "$_status" | awk '{print $NF}')" = "running" ]]; then
         if (( ! _force )); then
             return
@@ -141,9 +142,6 @@ make::vagrant() {
 
     msg "Importing srsran docker image"
     _in_vagrant "docker load -i /home/vagrant/project/$(basename "$_build_dir")/srsran.tar" "Error loading srsRAN image in VM"
-
-    # TODO: write topology and tests
-    # msg "Starting scripts in VM"
 }
 
 #:(virtualenv) Setup virtualenv with comnetsemu's dependencies for editor completion etc.

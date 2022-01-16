@@ -56,7 +56,7 @@ style: |
         padding-left: 0;
     }
 
-    .code-line {
+    div.right * {
         margin-top: 0;
         margin-bottom: 0;
         padding: 0;
@@ -69,8 +69,9 @@ style: |
         color: white;
     }
 
-    div.names * {
-        margin-bottom: 0.3rem !important;
+    div.names > * {
+        margin-top: 0;
+        margin-bottom: 0.3rem;
     }
 </style>
 
@@ -79,8 +80,10 @@ style: |
 ![bg left:47% 66%](srsran_logo_mod.svg)
 ![](#C4D7ED)
 
-#### University of Trento
-## Virtualized mobile networks
+<div class="right">
+
+##### University of Trento
+### Virtualized mobile networks
 
 # comnetsemu-srsRAN
 
@@ -90,6 +93,8 @@ style: |
 #### Ettore Saggiorato
 #### Stiven Sharra
 #### Prof. Fabrizio Granelli
+
+</div>
 
 </div>
 
@@ -184,17 +189,22 @@ for host in cmds:
 
 ---
 
-<style scoped>
-    h1 {
-        font-size: 4rem;
-    }
-</style>
-
-<!-- _paginate: false -->
-<!-- _class: center-vertical center-horizontal -->
-
 # Demo
 
+1. Start the VM (and provision it if necessary): 
+    ```shell
+    $ ./make.sh vagrant
+    ```
+
+2. Connect to the VM (using an interactive shell): 
+    ```shell
+    $ vagrant ssh -t -c 'cd project/src && bash'
+    ```
+
+3. Start one of the scripts: 
+    ```shell
+    $ sudo python3 5g_nsa.py
+    ```
 ---
 
 # Closing remarks
@@ -210,22 +220,22 @@ for host in cmds:
         background-color: transparent;
     }
 
-    .code-line {
-        /* text-align: center; */
+    div.right * {
         margin-top: 0;
         margin-bottom: 0;
         padding: 0;
     }
 
     h1 {
-        margin-top: 1rem !important;
-        margin-bottom: 2rem !important;
+        margin-top: 0.8rem !important;
+        margin-bottom: 1.8rem !important;
         font-size: 1.8rem;
         color: white;
     }
 
-    div.names *:not(:last-child) {
-        margin-bottom: 0.3rem !important;
+    div.names > * {
+        margin-top: 0;
+        margin-bottom: 0.3rem;
     }
 
     div.links {
@@ -246,6 +256,10 @@ for host in cmds:
         align-items: center;
         text-align: center;
     }
+
+    .whisper {
+        font-size: 18px;
+    }
 </style>
 
 <!-- _paginate: false -->
@@ -262,12 +276,17 @@ for host in cmds:
 
 [![w:400px](github_logo.svg)](https://github.com/Baldomo/comnetsemu-srsran)
 
+<span class="whisper">&#129045;  These are links  &#129045;</span>
+
 </div>
 
 <p class="break"></p>
 
-#### University of Trento
-## Virtualized mobile networks
+<div class="right">
+
+##### University of Trento
+### Virtualized mobile networks
+
 # comnetsemu-srsRAN
 
 <div class="names">
@@ -278,4 +297,5 @@ for host in cmds:
 #### Prof. Fabrizio Granelli
 
 </div>
+
 </div>
