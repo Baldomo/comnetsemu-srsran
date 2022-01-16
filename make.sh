@@ -131,6 +131,7 @@ make::vagrant() {
         vagrant reload
     fi
 
+    make::git_submodules
     # Only run these if -ff was used (see --help)
     _force=$(( _force > 0 ? _force-1 : 0 ))
     make::docker

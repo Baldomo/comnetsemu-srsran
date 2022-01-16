@@ -51,11 +51,47 @@ style: |
     }
 ---
 
-<!-- _class: center-vertical -->
-<!-- _backgroundImage: linear-gradient(25deg, #00164f, #174f80, #1d8eb3, #04d2e9) -->
-![](#dcf2ff)
+<style scoped>
+    section {
+        padding-left: 0;
+    }
 
-# <!-- fit --> comnetsemu-srsRAN
+    .code-line {
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 0;
+    }
+
+    h1 {
+        margin-top: 1rem !important;
+        margin-bottom: 2rem !important;
+        font-size: 2rem;
+        color: white;
+    }
+
+    div.names * {
+        margin-bottom: 0.3rem !important;
+    }
+</style>
+
+<!-- _class: center-vertical -->
+<!-- _backgroundColor: #246; -->
+![bg left:47% 66%](srsran_logo_mod.svg)
+![](#C4D7ED)
+
+#### University of Trento
+## Virtualized mobile networks
+
+# comnetsemu-srsRAN
+
+<div class="names">
+
+#### Leonardo Baldin
+#### Ettore Saggiorato
+#### Stiven Sharra
+#### Prof. Fabrizio Granelli
+
+</div>
 
 ---
 
@@ -77,7 +113,7 @@ The network stack is provided by the [srsRAN](https://github.com/srsran/srsRAN) 
 
 # Implementation notes
 
-* Three srsRAN components are used: EPC, eNodeB (ENB) and a simple UE
+- Three srsRAN components are used: EPC, eNodeB (ENB) and a simple UE
 * The RF signals are sent directly from UE to ENB using ZeroMQ REQ-REP instead of a software-defined radio
 * The ZeroMQ messages travel on the same network as EPC-ENB traffic but it's fine because ZeroMQ is strictly end-to-end
 * The components use the default configuration with necessary tweaks, such as static IP assignment to the EPC
@@ -121,10 +157,10 @@ The network stack is provided by the [srsRAN](https://github.com/srsran/srsRAN) 
 <!-- Cool trick, thank you https://github.com/marp-team/marpit/issues/137 -->
 <div class="twocols">
 
-* Mininet hates it when a single host is connected to two separate networks
+- Mininet hates it when a single host is connected to two separate networks
 * Mininet only attaches network interfaces to hosts **after** they've been started
   - This made `srsEPC`/`srsENB` stall execution since they couldn't connect
-* A single network for all the traffic was fine in theory
+* A single network for all the traffic was deemed viable after testing
 
 <p class="break"></p>
 
@@ -138,8 +174,9 @@ cmds[epc] = "srsepc ..."
 
 # Start network and interfaces
 net.start()
+
+# Run command inside each host
 for host in cmds:
-    # Run command inside each host
     host.cmd(cmds[host])
 ```
 
@@ -165,3 +202,80 @@ for host in cmds:
   - srsRAN can also use SUB/PUB ZeroMQ sockets (*not mentioned in the official documentation*)
 - Multiple cells can be emulated via [S1 handover](https://docs.srslte.com/en/latest/app_notes/source/handover/source/index.html)
 - The code provided is simple and very procedural (and full of hacks and workarounds) but it's a working, stable example of what can be done with srsRAN in a containerized environment
+
+---
+
+<style scoped>
+    img {
+        background-color: transparent;
+    }
+
+    .code-line {
+        /* text-align: center; */
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 0;
+    }
+
+    h1 {
+        margin-top: 1rem !important;
+        margin-bottom: 2rem !important;
+        font-size: 1.8rem;
+        color: white;
+    }
+
+    div.names *:not(:last-child) {
+        margin-bottom: 0.3rem !important;
+    }
+
+    div.links {
+        margin-right: 1rem;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    div.links > * {
+        flex-grow: 1;
+    }
+
+    div.links * {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+</style>
+
+<!-- _paginate: false -->
+<!-- _class: center-vertical -->
+<!-- _backgroundColor: #246; -->
+<!-- ![bg left:47% 66%](srsran_logo_mod.svg) -->
+![](#C4D7ED)
+
+<div class="twocols">
+
+<div class="links">
+
+[![w:400px](srsran.svg)](https://www.srsran.com/)
+
+[![w:400px](github_logo.svg)](https://github.com/Baldomo/comnetsemu-srsran)
+
+</div>
+
+<p class="break"></p>
+
+#### University of Trento
+## Virtualized mobile networks
+# comnetsemu-srsRAN
+
+<div class="names">
+
+#### Leonardo Baldin
+#### Ettore Saggiorato
+#### Stiven Sharra
+#### Prof. Fabrizio Granelli
+
+</div>
+</div>
